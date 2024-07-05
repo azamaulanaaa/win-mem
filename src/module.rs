@@ -1,4 +1,3 @@
-use std::ffi::CStr;
 use std::io::ErrorKind;
 use std::ops::Deref;
 use windows::Win32::Foundation::HMODULE;

@@ -22,12 +22,16 @@ impl<const N: usize> PartialEq<&[u8]> for Pattern<N> {
         for (index, element) in self.0.iter().enumerate() {
             match element {
                 Some(value) => {
-                    if other.get(index).map_or_else(|| true, |e| e != value) {
+                    if other.get(index).map_or(true, |e| e != value) {
                         return false;
                     }
                 }
                 None => continue,
             }
+        }
+
+        if other.get(N).is_some() {
+            return false;
         }
 
         return true;
@@ -45,7 +49,7 @@ impl<const N: usize> PartialEq<&[u8; N]> for Pattern<N> {
         for (index, element) in self.0.iter().enumerate() {
             match element {
                 Some(value) => {
-                    if other.get(index).map_or_else(|| true, |e| e != value) {
+                    if other.get(index).map_or(true, |e| e != value) {
                         return false;
                     }
                 }
@@ -70,17 +74,21 @@ mod tests {
         let a = super::Pattern::from([Some(8), None, Some(20)]);
         let b = [8u8, 11u8, 20u8];
 
-        assert!(a == &b);
-        assert!(&b == a);
+        assert_eq!(a, &b);
+        assert_eq!(&b, a);
     }
 
     #[test]
     fn comparing_to_slice_u8_unknown_size() {
         let a = super::Pattern::from([Some(8), None, Some(20)]);
         let b = [8u8, 11u8, 20u8];
-        let c = &b as &[u8];
+        let b1 = &b as &[u8];
+        let c = [8u8, 11u8, 20u8, 0u8];
+        let c1 = &c as &[u8];
 
-        assert!(a == c);
-        assert!(c == a);
+        assert_eq!(a, b1);
+        assert_eq!(b1, a);
+        assert_ne!(a, c1);
+        assert_ne!(c1, a);
     }
 }

@@ -36,7 +36,6 @@ impl Into<CREATE_TOOLHELP_SNAPSHOT_FLAGS> for HandleSnapshotFlag {
 pub struct Handle {
     raw: HANDLE,
     process_id: u32,
-    is_snapshot: bool,
 }
 
 impl Handle {
@@ -44,29 +43,13 @@ impl Handle {
         self.process_id
     }
 
-    pub fn is_snapshot(&self) -> bool {
-        self.is_snapshot
-    }
-
-    pub fn create_snapshot(&self, flag: HandleSnapshotFlag) -> Result<Self, ErrorKind> {
-        if self.is_snapshot {
-            return Err(ErrorKind::InvalidData);
-        }
-
-        let new_handle = Handle {
+    pub fn create_snapshot(&self, flag: HandleSnapshotFlag) -> Result<HandleSnapshot, ErrorKind> {
+        let new_handle = HandleSnapshot {
             raw: unsafe { CreateToolhelp32Snapshot(flag.into(), self.process_id) }
                 .map_err(|_| ErrorKind::Other)?,
             process_id: self.process_id,
-            is_snapshot: true,
         };
         return Ok(new_handle);
-    }
-
-    pub fn get_modules(&self) -> HandleModuleIter {
-        HandleModuleIter {
-            handle: self.raw,
-            is_first: true,
-        }
     }
 }
 
@@ -96,36 +79,67 @@ impl TryFrom<u32> for Handle {
     type Error = ErrorKind;
 
     fn try_from(value: u32) -> Result<Handle, Self::Error> {
-        let h = unsafe { OpenProcess(PROCESS_ACCESS_RIGHTS(0xFFFF), BOOL(0), value) }
-            .map_err(|_| ErrorKind::Other)?;
-        if !h.is_invalid() {
-            return Ok(Handle {
-                raw: h,
-                process_id: value,
-                is_snapshot: false,
-            });
-        }
+        let h = {
+            let mut h: HANDLE = HANDLE(0);
 
-        let h = unsafe { OpenProcess(PROCESS_ACCESS_RIGHTS(0x10 | 0x20), BOOL(0), value) }
-            .map_err(|_| ErrorKind::Other)?;
-        if !h.is_invalid() {
-            return Ok(Handle {
-                raw: h,
-                process_id: value,
-                is_snapshot: false,
-            });
-        }
+            h = unsafe { OpenProcess(PROCESS_ACCESS_RIGHTS(0xFFFF), BOOL(0), value) }
+                .map_err(|_| ErrorKind::Other)?;
 
-        return Err(ErrorKind::Other);
+            if h.is_invalid() {
+                h = unsafe { OpenProcess(PROCESS_ACCESS_RIGHTS(0x10 | 0x20), BOOL(0), value) }
+                    .map_err(|_| ErrorKind::Other)?;
+            }
+
+            if h.is_invalid() {
+                return Err(ErrorKind::Other);
+            }
+
+            h
+        };
+
+        return Ok(Self {
+            raw: h,
+            process_id: value,
+        });
     }
 }
 
-pub struct HandleModuleIter {
+pub struct HandleSnapshot {
+    raw: HANDLE,
+    process_id: u32,
+}
+
+impl HandleSnapshot {
+    pub fn get_modules(&self) -> HandleSnapshotModuleIter {
+        HandleSnapshotModuleIter {
+            handle: self.raw,
+            is_first: true,
+        }
+    }
+}
+
+impl Deref for HandleSnapshot {
+    type Target = HANDLE;
+
+    fn deref(&self) -> &Self::Target {
+        &self.raw
+    }
+}
+
+impl Drop for HandleSnapshot {
+    fn drop(&mut self) {
+        if !self.raw.is_invalid() {
+            let _ = unsafe { CloseHandle(**self) };
+        }
+    }
+}
+
+pub struct HandleSnapshotModuleIter {
     handle: HANDLE,
     is_first: bool,
 }
 
-impl Iterator for HandleModuleIter {
+impl Iterator for HandleSnapshotModuleIter {
     type Item = Module;
 
     fn next(&mut self) -> Option<Self::Item> {

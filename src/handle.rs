@@ -32,7 +32,6 @@ impl Into<CREATE_TOOLHELP_SNAPSHOT_FLAGS> for HandleSnapshotFlag {
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct Handle {
     raw: HANDLE,
     process_id: u32,
@@ -110,9 +109,13 @@ pub struct HandleSnapshot {
 }
 
 impl HandleSnapshot {
+    pub fn get_process_id(&self) -> u32 {
+        self.process_id
+    }
+
     pub fn get_modules(&self) -> HandleSnapshotModuleIter {
         HandleSnapshotModuleIter {
-            handle: self.raw,
+            handle: self,
             is_first: true,
         }
     }
@@ -134,12 +137,12 @@ impl Drop for HandleSnapshot {
     }
 }
 
-pub struct HandleSnapshotModuleIter {
-    handle: HANDLE,
+pub struct HandleSnapshotModuleIter<'a> {
+    handle: &'a HandleSnapshot,
     is_first: bool,
 }
 
-impl Iterator for HandleSnapshotModuleIter {
+impl<'a> Iterator for HandleSnapshotModuleIter<'a> {
     type Item = Module;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -157,7 +160,7 @@ impl Iterator for HandleSnapshotModuleIter {
         };
 
         if self.is_first {
-            match unsafe { Module32FirstW(self.handle, &mut module_entry_32w as *mut _) } {
+            match unsafe { Module32FirstW(**self.handle, &mut module_entry_32w as *mut _) } {
                 Ok(_) => {
                     self.is_first = false;
                     return Some(Module::from(module_entry_32w));
@@ -168,7 +171,7 @@ impl Iterator for HandleSnapshotModuleIter {
             }
         }
 
-        match unsafe { Module32NextW(self.handle, &mut module_entry_32w as *mut _) } {
+        match unsafe { Module32NextW(**self.handle, &mut module_entry_32w as *mut _) } {
             Ok(_) => {
                 return Some(Module::from(module_entry_32w));
             }

@@ -3,15 +3,15 @@ use windows::Win32::System::Diagnostics::Debug::{ReadProcessMemory, WriteProcess
 
 use crate::handle::Handle;
 
-pub struct Memory {
-    handle: Handle,
+pub struct Memory<'a> {
+    handle: &'a Handle,
     current_address: usize,
     start_address: usize,
     end_address: usize,
 }
 
-impl Memory {
-    pub fn new(handle: Handle, start_address: usize, end_address: usize) -> Self {
+impl<'a> Memory<'a> {
+    pub fn new(handle: &'a Handle, start_address: usize, end_address: usize) -> Self {
         Self {
             handle,
             current_address: start_address,
@@ -21,13 +21,13 @@ impl Memory {
     }
 }
 
-impl Read for Memory {
+impl<'a> Read for Memory<'a> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let mut n = 0usize;
 
         let _ = unsafe {
             ReadProcessMemory(
-                *self.handle,
+                **self.handle,
                 self.current_address as *const _,
                 buf as *mut [u8] as *mut _,
                 buf.len().min(self.end_address - self.current_address),
@@ -46,12 +46,12 @@ impl Read for Memory {
     }
 }
 
-impl Write for Memory {
+impl<'a> Write for Memory<'a> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let mut n = 0usize;
         let _ = unsafe {
             WriteProcessMemory(
-                *self.handle,
+                **self.handle,
                 self.current_address as *const _,
                 buf as *const [u8] as *const _,
                 buf.len(),
@@ -74,7 +74,7 @@ impl Write for Memory {
     }
 }
 
-impl Seek for Memory {
+impl<'a> Seek for Memory<'a> {
     fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
         return match pos {
             SeekFrom::Start(value) => {

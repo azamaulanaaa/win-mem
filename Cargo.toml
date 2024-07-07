@@ -17,6 +17,7 @@ windows = {version = "0.57", features = [
   "Win32_UI",
   "Win32_UI_WindowsAndMessaging",
   "Win32_System",
+  "Win32_System_Memory",
   "Win32_System_Diagnostics",
   "Win32_System_Diagnostics_ToolHelp",
   "Win32_System_Diagnostics_Debug",

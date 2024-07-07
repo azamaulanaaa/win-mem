@@ -8,9 +8,14 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Module32FirstW, Module32NextW, CREATE_TOOLHELP_SNAPSHOT_FLAGS,
     MODULEENTRY32W,
 };
+use windows::Win32::System::Memory::{
+    VirtualQueryEx, MEMORY_BASIC_INFORMATION, PAGE_PROTECTION_FLAGS, PAGE_TYPE,
+    VIRTUAL_ALLOCATION_TYPE,
+};
 use windows::Win32::System::Threading::GetCurrentProcessId;
 use windows::Win32::System::Threading::{OpenProcess, PROCESS_ACCESS_RIGHTS};
 
+use crate::memory::MemoryBasicInformation;
 use crate::module::Module;
 
 bitflags! {
@@ -49,6 +54,13 @@ impl Handle {
             process_id: self.process_id,
         };
         return Ok(new_handle);
+    }
+
+    pub fn get_memory_basic_informations(&self) -> HandleMemoryBasicInformationIter {
+        HandleMemoryBasicInformationIter {
+            handle: self,
+            current_address: None,
+        }
     }
 }
 
@@ -179,5 +191,47 @@ impl<'a> Iterator for HandleSnapshotModuleIter<'a> {
                 return None;
             }
         }
+    }
+}
+
+pub struct HandleMemoryBasicInformationIter<'a> {
+    handle: &'a Handle,
+    current_address: Option<usize>,
+}
+
+impl<'a> Iterator for HandleMemoryBasicInformationIter<'a> {
+    type Item = MemoryBasicInformation;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut mbi = MEMORY_BASIC_INFORMATION {
+            BaseAddress: std::ptr::null_mut(),
+            AllocationBase: std::ptr::null_mut(),
+            AllocationProtect: PAGE_PROTECTION_FLAGS(0),
+            #[cfg(target_arch = "x86_64")]
+            PartitionId: 0,
+            RegionSize: 0,
+            State: VIRTUAL_ALLOCATION_TYPE(0),
+            Protect: PAGE_PROTECTION_FLAGS(0),
+            Type: PAGE_TYPE(0),
+        };
+
+        let n = unsafe {
+            VirtualQueryEx(
+                **self.handle,
+                self.current_address.map(|v| v as *const _),
+                &mut mbi as *mut _,
+                size_of::<MEMORY_BASIC_INFORMATION>(),
+            )
+        };
+
+        if n != 0 {
+            let mbi = MemoryBasicInformation::from(mbi);
+
+            self.current_address = Some(mbi.get_region_size() + self.current_address.unwrap_or(0));
+
+            return Some(mbi);
+        }
+
+        None
     }
 }

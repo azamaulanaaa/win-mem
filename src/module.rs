@@ -1,10 +1,6 @@
-use std::io::ErrorKind;
 use std::ops::Deref;
 use windows::Win32::Foundation::HMODULE;
 use windows::Win32::System::Diagnostics::ToolHelp::MODULEENTRY32W;
-
-use crate::handle::Handle;
-use crate::memory::Memory;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Module(MODULEENTRY32W);
@@ -54,18 +50,5 @@ impl Deref for Module {
 impl From<MODULEENTRY32W> for Module {
     fn from(value: MODULEENTRY32W) -> Self {
         Self(value)
-    }
-}
-
-impl TryInto<Memory> for Module {
-    type Error = ErrorKind;
-
-    fn try_into(self) -> Result<Memory, Self::Error> {
-        let handle = Handle::try_from(self.get_process_id())?;
-        Ok(Memory::new(
-            handle,
-            self.get_address(),
-            self.get_address() + self.get_size() as usize,
-        ))
     }
 }

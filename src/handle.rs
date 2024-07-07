@@ -18,6 +18,7 @@ use windows::Win32::System::Threading::{OpenProcess, PROCESS_ACCESS_RIGHTS};
 use crate::memory::MemoryBasicInformation;
 use crate::module::Module;
 
+// TODO: bitflags bad at doc generation
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct HandleSnapshotFlag: u32 {
@@ -37,16 +38,19 @@ impl Into<CREATE_TOOLHELP_SNAPSHOT_FLAGS> for HandleSnapshotFlag {
     }
 }
 
+/// process handle
 pub struct Handle {
     raw: HANDLE,
     process_id: u32,
 }
 
 impl Handle {
+    /// process id of the handle
     pub fn get_process_id(&self) -> u32 {
         self.process_id
     }
 
+    /// createting handle snapshot
     pub fn create_snapshot(&self, flag: HandleSnapshotFlag) -> Result<HandleSnapshot, ErrorKind> {
         let new_handle = HandleSnapshot {
             raw: unsafe { CreateToolhelp32Snapshot(flag.into(), self.process_id) }
@@ -56,6 +60,7 @@ impl Handle {
         return Ok(new_handle);
     }
 
+    /// iterator for memory information related to handle
     pub fn get_memory_basic_informations(&self) -> HandleMemoryBasicInformationIter {
         HandleMemoryBasicInformationIter {
             handle: self,
@@ -115,16 +120,19 @@ impl TryFrom<u32> for Handle {
     }
 }
 
+/// Process Handle Snapshot
 pub struct HandleSnapshot {
     raw: HANDLE,
     process_id: u32,
 }
 
 impl HandleSnapshot {
+    /// get process id
     pub fn get_process_id(&self) -> u32 {
         self.process_id
     }
 
+    /// get modules
     pub fn get_modules(&self) -> HandleSnapshotModuleIter {
         HandleSnapshotModuleIter {
             handle: self,
@@ -149,6 +157,7 @@ impl Drop for HandleSnapshot {
     }
 }
 
+/// Process Handle Snapshot -> Module Iterator
 pub struct HandleSnapshotModuleIter<'a> {
     handle: &'a HandleSnapshot,
     is_first: bool,
@@ -194,6 +203,7 @@ impl<'a> Iterator for HandleSnapshotModuleIter<'a> {
     }
 }
 
+/// Process Handle -> Memory Basic Information Iterator
 pub struct HandleMemoryBasicInformationIter<'a> {
     handle: &'a Handle,
     current_address: Option<usize>,

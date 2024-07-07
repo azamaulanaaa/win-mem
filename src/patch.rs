@@ -4,6 +4,7 @@ use crate::pattern::Pattern;
 
 use std::io::{ErrorKind, Read, Write};
 
+/// Patching a process
 pub struct PatchHandle<'a> {
     handle: &'a Handle,
 }
@@ -19,12 +20,14 @@ impl<'a> PatchHandle<'a> {
         Ok(n)
     }
 
+    /// direct patching to an address without checking
     pub fn direct<const M: usize>(&self, addr: usize, value: &[u8; M]) -> Result<&Self, ErrorKind> {
         let mut memory = Memory::new(self.handle, addr, addr + M);
         let _ = memory.write(value).map_err(|e| e.kind())?;
         Ok(self)
     }
 
+    /// patching to a first match address that have value matchs the pattern
     pub fn pattern_matching<'b, const N: usize, const M: usize>(
         &self,
         module_name: Option<&'b str>,

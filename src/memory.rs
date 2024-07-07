@@ -7,6 +7,7 @@ use windows::Win32::System::Memory::{
 
 use crate::handle::Handle;
 
+/// Wrapper for memory that act like io
 pub struct Memory<'a> {
     handle: &'a Handle,
     current_address: usize,
@@ -198,38 +199,47 @@ impl TryFrom<PAGE_TYPE> for PageType {
     }
 }
 
+/// Look at [MEMORY_BASIC_INFORMATION (winnt.h) Win32 API](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-memory_basic_information)
 pub struct MemoryBasicInformation(MEMORY_BASIC_INFORMATION);
 
 impl MemoryBasicInformation {
+    /// get `BaseAddress`
     pub fn get_base_address(&self) -> usize {
         self.0.BaseAddress as usize
     }
 
+    /// get `AllocationBase`
     pub fn get_allocation_base(&self) -> usize {
         self.0.AllocationBase as usize
     }
 
+    /// get `AllocationProtect`
     pub fn get_allocation_protect(&self) -> PageProtectionFlags {
         PageProtectionFlags::try_from(self.0.AllocationProtect).unwrap()
     }
 
+    /// get `PatitionId`
     #[cfg(target_arch = "x86_64")]
     pub fn get_partition_id(&self) -> u16 {
         self.0.PartitionId
     }
 
+    /// get `RegionSize`
     pub fn get_region_size(&self) -> usize {
         self.0.RegionSize
     }
 
+    /// get `State`
     pub fn get_state(&self) -> VirtualAllocationType {
         VirtualAllocationType::try_from(self.0.State).unwrap()
     }
 
+    /// get `Protect`
     pub fn get_protect(&self) -> PageProtectionFlags {
         PageProtectionFlags::try_from(self.0.Protect).unwrap()
     }
 
+    /// get `Type`
     pub fn get_type(&self) -> PageType {
         PageType::try_from(self.0.Type).unwrap()
     }

@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 // TODO: Bench
+/// Simple pattern bytes
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct Pattern<const N: usize>([Option<u8>; N]);
 

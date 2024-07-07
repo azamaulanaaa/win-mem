@@ -27,6 +27,24 @@ impl<'a> PatchHandle<'a> {
         Ok(self)
     }
 
+    /// direct patching but verity current value before patching
+    pub fn direct_verify<const N: usize, const M: usize>(
+        &self,
+        addr: usize,
+        pattern: Pattern<N>,
+        value: &[u8; M],
+    ) -> Result<&Self, ErrorKind> {
+        let mut data = vec![0u8; N];
+        let _ = self.read(addr, &mut data);
+        if pattern == data.as_slice() {
+            self.direct(addr, value)?;
+        } else {
+            return Err(ErrorKind::NotFound);
+        }
+
+        Ok(self)
+    }
+
     /// patching to a first match address that have value matchs the pattern
     pub fn pattern_matching<'b, const N: usize, const M: usize>(
         &self,

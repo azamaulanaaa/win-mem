@@ -7,9 +7,6 @@ license = "MIT"
 keywords = ["memory", "windows", "patch"]
 readme = "README.md"
 
-[lib]
-crate-type = ["cdylib"]
-
 [dependencies]
 bitflags = "2.6.0"
 windows = {version = "0.57", features = [

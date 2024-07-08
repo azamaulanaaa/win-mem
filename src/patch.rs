@@ -45,6 +45,26 @@ impl<'a> PatchHandle<'a> {
         Ok(self)
     }
 
+    /// direct patching with pointer
+    pub fn direct_pointer<const N: usize, const K: usize>(
+        &self,
+        addr: usize,
+        offsets: &[usize; K],
+        value: &[u8; N],
+    ) -> Result<&Self, ErrorKind> {
+        let mut addr = addr;
+        let mut data = Vec::from(0usize.to_ne_bytes());
+
+        for offset in offsets {
+            let _ = self.read(addr, &mut data);
+            addr = usize::from_ne_bytes(*data.as_slice().first_chunk().unwrap()) + offset;
+        }
+
+        self.direct(addr, value)?;
+
+        Ok(self)
+    }
+
     /// patching to a first match address that have value matchs the pattern
     pub fn pattern_matching<'b, const N: usize, const M: usize>(
         &self,

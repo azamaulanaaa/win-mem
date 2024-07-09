@@ -19,7 +19,7 @@ pub enum BaseAddress<'a, const N: usize> {
     /// verify value of the address before patching
     DirectVerify(usize, Pattern<N>),
     /// find value in the memory section that matches the pattern to get the address
-    Pattern(Pattern<N>, MemorySection<'a>),
+    Search(Pattern<N>, MemorySection<'a>),
 }
 
 /// Patching a process
@@ -51,7 +51,7 @@ impl<'a> PatchHandle<'a> {
                     Err(ErrorKind::NotFound)
                 }
             }
-            BaseAddress::Pattern(pattern, mem_section) => {
+            BaseAddress::Search(pattern, mem_section) => {
                 let step = 4;
 
                 let address_ranges: Vec<(usize, usize)> = match mem_section {

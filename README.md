@@ -4,7 +4,7 @@
 
 ## Plant Vs Zombie (GOTY)
 
-example as dll injection paylod patching Plant Vs Zombie (GOTY) 32bit to never lost suns.
+example as dll injection payload patching Plant Vs Zombie (GOTY) 32bit to never lost suns.
 
 ```rust
 use win_mem::{handle::Handle, patch::{BaseAddress, MemorySection, PatchHandle}, pattern::Pattern};
@@ -24,7 +24,7 @@ fn on_process_attach() -> BOOL {
     let patch_handle = PatchHandle::new(&handle);
 
     let _ = patch_handle.apply(
-        BaseAddress::Pattern(
+        BaseAddress::Search(
             Pattern::from([Some(0x2B), Some(0xF3), Some(0x89), Some(0xB7)]),
             MemorySection::Module("PlantsVsZombies.exe"),
         ),

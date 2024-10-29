@@ -7,7 +7,7 @@
 example as dll injection payload patching Plant Vs Zombie (GOTY) 32bit to never lost suns.
 
 ```rust
-use win_mem::{handle::Handle, patch::{BaseAddress, MemorySection, PatchHandle}, pattern::Pattern};
+use winmem::{handle::Handle, patch::{BaseAddress, MemorySection, PatchHandle}, pattern::Pattern};
 use windows::Win32::Foundation::{BOOL, HANDLE};
 
 #[no_mangle]

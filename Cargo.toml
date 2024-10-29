@@ -1,5 +1,6 @@
 [package]
 name = "win-mem"
+description = "windows memory patching"
 version = "0.2.0"
 edition = "2021"
 authors = ["Aza Maulana <azamaulanaaa@gmail.com>"]
